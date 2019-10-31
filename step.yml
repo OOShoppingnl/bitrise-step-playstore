@@ -161,7 +161,7 @@ inputs:
       - "true"
       - "false"
       is_required: true
-  - skip_deploy: "true"
+  - skip_deploy: null
     opts:
       title: "Skip deploy?"
       description: |-
