@@ -1,7 +1,9 @@
 #!/bin/bash
 set -ex
-if [ "$skip_deploy" == "true" ]
+if [ -z ${skip_deploy+x} ]
 then
+    echo "Playstore deploy skipped";
+else
     THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
     tmp_gopath_dir="$(mktemp -d)"
