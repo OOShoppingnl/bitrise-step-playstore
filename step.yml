@@ -161,6 +161,15 @@ inputs:
       - "true"
       - "false"
       is_required: true
+  - skip_deploy: "true"
+    opts:
+      title: "Skip deploy?"
+      description: |-
+        Do you want to skip the playstore deploy?
+      value_options:
+      - "true"
+      - "false"
+      is_required: true
   - apk_path: 
     opts:
       title: APK file path
