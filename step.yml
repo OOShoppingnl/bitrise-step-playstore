@@ -161,11 +161,13 @@ inputs:
       - "true"
       - "false"
       is_required: true
-  - skip_deploy: null
+  - run_deploy: null
     opts:
-      title: "Skip deploy?"
+      title: "Run deploy?"
       description: |-
-        Do you want to skip the playstore deploy?
+        Do you want to run the playstore deploy?
+        Set this to any value you want if you want to run deploy
+        If unset (empty / null) it will deploy the app to playstore
   - apk_path: 
     opts:
       title: APK file path

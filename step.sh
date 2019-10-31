@@ -1,9 +1,8 @@
 #!/bin/bash
 set -ex
-if [ -z ${skip_deploy+x} ]
+if [ -z ${run_deploy+x} ]
 then
-    echo "Playstore deploy skipped";
-else
+    echo "Running playstore deploy";
     THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
     tmp_gopath_dir="$(mktemp -d)"
@@ -17,4 +16,6 @@ else
     export GOPATH="${tmp_gopath_dir}"
     export GO15VENDOREXPERIMENT=1
     go run "${full_package_path}/main.go"
+else
+    echo "Playstore deploy skipped";
 fi
