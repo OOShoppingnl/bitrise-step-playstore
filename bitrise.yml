@@ -1,0 +1,148 @@
+format_version: "8"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+workflows:
+  test:
+    steps:
+    - script:
+        inputs:
+        - content: stepman audit --step-yml ./step.yml
+    - go-list:
+    - golint:
+    - errcheck:
+    - go-test:
+    after_run:
+    - apk_deploy_test
+    - aab_deploy_test
+
+  aab_deploy_test:
+    envs:
+    # sample app
+    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-sdk22.git
+    - SAMPLE_APP_BRANCH: master
+    # codesigning
+    - BITRISEIO_ANDROID_KEYSTORE_URL: $BITRISEIO_ANDROID_KEYSTORE_1_URL
+    - BITRISEIO_ANDROID_KEYSTORE_PASSWORD: $BITRISEIO_ANDROID_KEYSTORE_PASSWORD
+    - BITRISEIO_ANDROID_KEYSTORE_ALIAS: $BITRISEIO_ANDROID_KEYSTORE_ALIAS
+    - BITRISEIO_ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD: $BITRISEIO_ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD
+    # google play deploy
+    - PACKAGE_NAME: "com.bitrise_io.sample_apps_android_simple"
+    - BITRISEIO_JSON_KEY_URL: $BITRISEIO_JSON_KEY_URL
+    - TRACK: production
+
+    steps:
+    - script: 
+        inputs:
+        - content: rm -rf ./_tmp
+    - change-workdir:
+        run_if: true
+        inputs:
+        - path: ./_tmp
+    - script:
+        inputs:
+        - content: git clone --branch $SAMPLE_APP_BRANCH $SAMPLE_APP_URL ./
+    - install-missing-android-tools:
+        inputs:
+        - gradlew_path: ./gradlew
+    - change-android-versioncode-and-versionname:
+        inputs:
+        - build_gradle_path: ./app/build.gradle
+        - new_version_code: $BITRISE_BUILD_NUMBER
+        - new_version_name: "0.2.4"
+    - gradle-runner:
+        inputs:
+        - gradle_task: bundleRelease
+        - gradlew_path: ./gradlew
+    - sign-apk:
+        inputs:
+        - apk_path: $BITRISE_AAB_PATH
+    - path::./:
+        title: Step Test
+        inputs:
+        - service_account_json_key_path: $BITRISEIO_JSON_KEY_URL
+        - package_name: $PACKAGE_NAME
+        - app_path: $BITRISE_SIGNED_AAB_PATH
+        - track: $TRACK
+        
+  apk_deploy_test:
+    envs:
+    # sample app
+    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-realmtasks.git
+    - SAMPLE_APP_BRANCH: master
+    # google services
+    - BITRISEIO_GOOGLE_SERVICES_JSON_URL: $BITRISEIO_GOOGLE_SERVICES_JSON_URL
+    # codesigning
+    - BITRISEIO_ANDROID_KEYSTORE_URL: $BITRISEIO_ANDROID_KEYSTORE_URL
+    - BITRISEIO_ANDROID_KEYSTORE_PASSWORD: $BITRISEIO_ANDROID_KEYSTORE_PASSWORD
+    - BITRISEIO_ANDROID_KEYSTORE_ALIAS: $BITRISEIO_ANDROID_KEYSTORE_ALIAS
+    - BITRISEIO_ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD: $BITRISEIO_ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD
+    # google play deploy
+    - PACKAGE_NAME: "io.bitrise.realmtasks"
+    - BITRISEIO_JSON_KEY_URL: $BITRISEIO_JSON_KEY_URL
+    - TRACK: another-track
+
+    steps:
+    - script: 
+        inputs:
+        - content: rm -rf ./_tmp
+    - script:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            
+            # install Android NDK
+            if [ ! -d "$ANDROID_HOME/ndk-bundle/toolchains/mips64el-linux-android-4.9" ]
+            then
+                curl "https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip" -o /tmp/ndk.zip
+                rm -rf $ANDROID_HOME/ndk-bundle
+                unzip -q /tmp/ndk.zip -d $ANDROID_HOME/
+                mv $ANDROID_HOME/android-ndk-r16b $ANDROID_HOME/ndk-bundle
+                rm -rf /tmp/ndk.zip
+                envman add --key "ANDROID_NDK_HOME" --value "$ANDROID_HOME/ndk-bundle"
+            fi
+    - change-workdir:
+        run_if: true
+        inputs:
+        - path: ./_tmp
+    - script:
+        inputs:
+        - content: git clone --branch $SAMPLE_APP_BRANCH $SAMPLE_APP_URL ./
+    - script:
+        inputs:
+        - content: curl -o "./app/google-services.json" "$BITRISEIO_GOOGLE_SERVICES_JSON_URL"
+    - install-missing-android-tools:
+        inputs:
+        - gradlew_path: ./gradlew
+    - change-android-versioncode-and-versionname:
+        inputs:
+        - build_gradle_path: ./app/build.gradle
+        - new_version_code: $BITRISE_BUILD_NUMBER
+        - new_version_name: "0.2.4"
+    - gradle-runner:
+        inputs:
+        - gradle_task: assembleRelease
+        - gradlew_path: ./gradlew
+    - sign-apk:
+        inputs:
+        - apk_path: $BITRISE_APK_PATH_LIST
+    - path::./:
+        title: Step Test
+        inputs:
+        - service_account_json_key_path: $BITRISEIO_JSON_KEY_URL
+        - package_name: $PACKAGE_NAME
+        - apk_path: $BITRISE_SIGNED_APK_PATH
+        - track: $TRACK
+        - mapping_file: ""
+        - user_fraction: ""
+
+  dep-update:
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            go get -u -v github.com/golang/dep/cmd/dep
+            dep ensure -v
+            dep ensure -v -update
