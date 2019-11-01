@@ -35,6 +35,16 @@ const (
 	productionTrackName = "production"
 )
 
+func main() {
+	value := os.Getenv("run_deploy")
+	if len(value) == 0 {
+		log.Donef("Skipping playstore deploy rustig...")
+	} else {
+		log.Donef("Deploying app to playstore rustig...")
+		google_main()
+	}
+}
+
 func downloadFile(downloadURL, targetPath string) error {
 	outFile, err := os.Create(targetPath)
 	if err != nil {
@@ -146,7 +156,7 @@ func failf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-func main() {
+func google_main() {
 	var configs Configs
 	if err := stepconf.Parse(&configs); err != nil {
 		failf("Couldn't create config: %s\n", err)
