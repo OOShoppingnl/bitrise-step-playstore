@@ -1,8 +1,8 @@
 #!/bin/bash
 set -ex
-if [ -z ${run_deploy+x} ]
+if [[ -v $run_deploy ]]]
 then
-    echo "Running playstore deploy";
+    echo "Running playstore deploy variable: ${run_deploy}";
     THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
     tmp_gopath_dir="$(mktemp -d)"
